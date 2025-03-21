@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -18,22 +19,30 @@
             position: absolute;
             top: 10px;
             left: 50%;
-            transform: translateX(-50%); /* Centers horizontally */
+            transform: translateX(-50%);
+            /* Centers horizontally */
             z-index: 10;
-            color: white; /* Ensures visibility against the light grey background */
-            background-color: rgba(0, 0, 0, 0.7); /* Semi-transparent black background for readability */
-            padding: 5px 10px; /* Adds some padding for aesthetics */
-            border-radius: 3px; /* Rounds the corners */
-            font-family: Arial, sans-serif; /* Clean font */
+            color: white;
+            /* Ensures visibility against the light grey background */
+            background-color: rgba(0, 0, 0, 0.7);
+            /* Semi-transparent black background for readability */
+            padding: 5px 10px;
+            /* Adds some padding for aesthetics */
+            border-radius: 3px;
+            /* Rounds the corners */
+            font-family: Arial, sans-serif;
+            /* Clean font */
             font-size: 16px;
         }
 
         /* Style for the test environment message */
         #test-message {
             position: absolute;
-            top: 40px; /* Adjusted to appear below the instructions */
+            top: 40px;
+            /* Adjusted to appear below the instructions */
             left: 50%;
-            transform: translateX(-50%); /* Centers horizontally */
+            transform: translateX(-50%);
+            /* Centers horizontally */
             z-index: 10;
             color: white;
             background-color: rgba(0, 0, 0, 0.7);
@@ -45,15 +54,19 @@
 
         /* Style for the hyperlink */
         #test-message a {
-            color: #00ccff; /* Light blue for visibility and distinction */
-            text-decoration: none; /* Removes underline by default */
+            color: #00ccff;
+            /* Light blue for visibility and distinction */
+            text-decoration: none;
+            /* Removes underline by default */
         }
 
         #test-message a:hover {
-            text-decoration: underline; /* Adds underline on hover for feedback */
+            text-decoration: underline;
+            /* Adds underline on hover for feedback */
         }
     </style>
 </head>
+
 <body>
     <!-- Instruction message -->
     <div id="instructions">Use W,A,S,D to control the character animations.</div>
@@ -123,49 +136,49 @@
             scene.add(character);
 
             character.traverse((child) => {
-    if (child.isMesh && child.material) {
-        child.material.color.multiplyScalar(1.5); // Brightens the material color by 50%
-    }
-});
-        mixer = new THREE.AnimationMixer(character);
-        const clips = gltf.animations;
+                if (child.isMesh && child.material) {
+                    child.material.color.multiplyScalar(1.5); // Brightens the material color by 50%
+                }
+            });
+            mixer = new THREE.AnimationMixer(character);
+            const clips = gltf.animations;
 
-        // Log all animation names
-        console.log('Animations in GLB file:');
-        clips.forEach(clip => console.log(clip.name));
+            // Log all animation names
+            console.log('Animations in GLB file:');
+            clips.forEach(clip => console.log(clip.name));
 
-        console.log(clips)
-        // Assign animation clips to actions
-        idleAction = mixer.clipAction(THREE.AnimationClip.findByName(clips, 'char_idle'));
-        runAction = mixer.clipAction(THREE.AnimationClip.findByName(clips, 'char_running'));
-        runBackAction = mixer.clipAction(THREE.AnimationClip.findByName(clips, 'char_running_backward'));
-        strafeLeftAction = mixer.clipAction(THREE.AnimationClip.findByName(clips, 'char_strafe_left'));
-        strafeRightAction = mixer.clipAction(THREE.AnimationClip.findByName(clips, 'char_strafe_right'));
+            console.log(clips)
+            // Assign animation clips to actions
+            idleAction = mixer.clipAction(THREE.AnimationClip.findByName(clips, 'char_idle'));
+            runAction = mixer.clipAction(THREE.AnimationClip.findByName(clips, 'char_running'));
+            runBackAction = mixer.clipAction(THREE.AnimationClip.findByName(clips, 'char_running_backward'));
+            strafeLeftAction = mixer.clipAction(THREE.AnimationClip.findByName(clips, 'char_strafe_left'));
+            strafeRightAction = mixer.clipAction(THREE.AnimationClip.findByName(clips, 'char_strafe_right'));
 
-        // Warn if animations are missing
-        if (!runBackAction) console.warn("Animation 'char_running_backward' not found");
-        if (!strafeLeftAction) console.warn("Animation 'char_strafe_left' not found");
-        if (!strafeRightAction) console.warn("Animation 'char_strafe_right' not found");
+            // Warn if animations are missing
+            if (!runBackAction) console.warn("Animation 'char_running_backward' not found");
+            if (!strafeLeftAction) console.warn("Animation 'char_strafe_left' not found");
+            if (!strafeRightAction) console.warn("Animation 'char_strafe_right' not found");
 
-        // Start with idle animation
-        idleAction.play();
-        currentAction = idleAction;
+            // Start with idle animation
+            idleAction.play();
+            currentAction = idleAction;
 
-        // Three-point lighting targeting the character
-        const keyLight = new THREE.SpotLight(0xffffff, 2); // Intensity increased to 2
-        keyLight.position.set(5, 5, 5);
-        keyLight.target = character;
-        scene.add(keyLight);
+            // Three-point lighting targeting the character
+            const keyLight = new THREE.SpotLight(0xffffff, 2); // Intensity increased to 2
+            keyLight.position.set(5, 5, 5);
+            keyLight.target = character;
+            scene.add(keyLight);
 
-        const fillLight = new THREE.SpotLight(0xffffff, 1); // Intensity increased to 1 (was 0.5)
-        fillLight.position.set(-5, 3, 5);
-        fillLight.target = character;
-        scene.add(fillLight);
+            const fillLight = new THREE.SpotLight(0xffffff, 1); // Intensity increased to 1 (was 0.5)
+            fillLight.position.set(-5, 3, 5);
+            fillLight.target = character;
+            scene.add(fillLight);
 
-        const backLight = new THREE.SpotLight(0xffffff, 1.6); // Intensity increased to 1.6 (was 0.8)
-        backLight.position.set(0, 5, -5);
-        backLight.target = character;
-        scene.add(backLight);
+            const backLight = new THREE.SpotLight(0xffffff, 1.6); // Intensity increased to 1.6 (was 0.8)
+            backLight.position.set(0, 5, -5);
+            backLight.target = character;
+            scene.add(backLight);
         });
 
         // Keyboard input handling
