@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Three.js Scene with Character</title>
+    <style>
+        body {
+            margin: 0;
+        }
+
+        canvas {
+            display: block;
+        }
+
+        /* Style for the instruction message */
+        #instructions {
+            position: absolute;
+            top: 10px;
+            left: 50%;
+            transform: translateX(-50%); /* Centers horizontally */
+            z-index: 10;
+            color: white; /* Ensures visibility against the light grey background */
+            background-color: rgba(0, 0, 0, 0.7); /* Semi-transparent black background for readability */
+            padding: 5px 10px; /* Adds some padding for aesthetics */
+            border-radius: 3px; /* Rounds the corners */
+            font-family: Arial, sans-serif; /* Clean font */
+            font-size: 16px;
+        }
+
+        /* Style for the test environment message */
+        #test-message {
+            position: absolute;
+            top: 40px; /* Adjusted to appear below the instructions */
+            left: 50%;
+            transform: translateX(-50%); /* Centers horizontally */
+            z-index: 10;
+            color: white;
+            background-color: rgba(0, 0, 0, 0.7);
+            padding: 5px 10px;
+            border-radius: 3px;
+            font-family: Arial, sans-serif;
+            font-size: 16px;
+        }
+
+        /* Style for the hyperlink */
+        #test-message a {
+            color: #00ccff; /* Light blue for visibility and distinction */
+            text-decoration: none; /* Removes underline by default */
+        }
+
+        #test-message a:hover {
+            text-decoration: underline; /* Adds underline on hover for feedback */
+        }
+    </style>
+</head>
+<body>
+    <!-- Instruction message -->
+    <div id="instructions">Use W,A,S,D to control the character animations.</div>
+
+    <!-- Test environment message with hyperlink -->
+    <div id="test-message">
+        Test characters in a more comprehensive environment at:<br>
+        <a href="https://render-fiction-editor-app.vercel.app/" target="_blank">
+            https://render-fiction-editor-app.vercel.app/
+        </a>
+    </div>
+    <!-- Load Three.js and necessary modules -->
+    <script src="https://cdn.jsdelivr.net/npm/three@0.132.2/build/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.132.2/examples/js/controls/OrbitControls.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.132.2/examples/js/loaders/GLTFLoader.js"></script>
+    <script>
+        // Scene setup
+        const scene = new THREE.Scene();
+        scene.background = new THREE.Color(0xcccccc); // Light grey background
+
+        // Camera setup
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        camera.position.set(0, 5, -10);
+
+        // Renderer setup
+        const renderer = new THREE.WebGLRenderer();
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        document.body.appendChild(renderer.domElement);
+
+        // Orbital controls for camera
+        const controls = new THREE.OrbitControls(camera, renderer.domElement);
+        controls.target.set(0, 1, 0); // Target slightly above origin to center on character
+        controls.enableDamping = true;
+        controls.dampingFactor = 0.05;
+
+        // Ground plane (50x50 units at 0,0,0)
+        const groundGeometry = new THREE.PlaneGeometry(50, 50);
+        const groundMaterial = new THREE.MeshStandardMaterial({
+            color: 0x575966,
+            roughness: 1.0
+        });
+        const ground = new THREE.Mesh(groundGeometry, groundMaterial);
+        ground.rotation.x = -Math.PI / 2; // Lay flat on XZ plane
+        scene.add(ground);
+
+        // Hemisphere light
+        const hemiLight = new THREE.HemisphereLight(0xffffff, 0xffffff);
+        hemiLight.position.set(0, 20, 0);
+        scene.add(hemiLight);
+
+        // Directional light
+        const dirLight = new THREE.DirectionalLight(0xffffff, 1);
+        dirLight.position.set(5, 10, 7.5);
+        scene.add(dirLight);
+
+        // Variables for character and animations
+        let mixer;
+        let character;
+        let idleAction, runAction, runBackAction, strafeLeftAction, strafeRightAction;
+        let currentAction;
+
+        // Load GLB model
+        const loader = new THREE.GLTFLoader();
+        loader.load('assets/vegeta_char.glb', (gltf) => {
+            character = gltf.scene;
+            character.scale.set(6, 6, 6);
+            scene.add(character);
+
+            character.traverse((child) => {
+    if (child.isMesh && child.material) {
+        child.material.color.multiplyScalar(1.5); // Brightens the material color by 50%
+    }
+});
+        mixer = new THREE.AnimationMixer(character);
+        const clips = gltf.animations;
+
+        // Log all animation names
+        console.log('Animations in GLB file:');
+        clips.forEach(clip => console.log(clip.name));
+
+        console.log(clips)
+        // Assign animation clips to actions
+        idleAction = mixer.clipAction(THREE.AnimationClip.findByName(clips, 'char_idle'));
+        runAction = mixer.clipAction(THREE.AnimationClip.findByName(clips, 'char_running'));
+        runBackAction = mixer.clipAction(THREE.AnimationClip.findByName(clips, 'char_running_backward'));
+        strafeLeftAction = mixer.clipAction(THREE.AnimationClip.findByName(clips, 'char_strafe_left'));
+        strafeRightAction = mixer.clipAction(THREE.AnimationClip.findByName(clips, 'char_strafe_right'));
+
+        // Warn if animations are missing
+        if (!runBackAction) console.warn("Animation 'char_running_backward' not found");
+        if (!strafeLeftAction) console.warn("Animation 'char_strafe_left' not found");
+        if (!strafeRightAction) console.warn("Animation 'char_strafe_right' not found");
+
+        // Start with idle animation
+        idleAction.play();
+        currentAction = idleAction;
+
+        // Three-point lighting targeting the character
+        const keyLight = new THREE.SpotLight(0xffffff, 2); // Intensity increased to 2
+        keyLight.position.set(5, 5, 5);
+        keyLight.target = character;
+        scene.add(keyLight);
+
+        const fillLight = new THREE.SpotLight(0xffffff, 1); // Intensity increased to 1 (was 0.5)
+        fillLight.position.set(-5, 3, 5);
+        fillLight.target = character;
+        scene.add(fillLight);
+
+        const backLight = new THREE.SpotLight(0xffffff, 1.6); // Intensity increased to 1.6 (was 0.8)
+        backLight.position.set(0, 5, -5);
+        backLight.target = character;
+        scene.add(backLight);
+        });
+
+        // Keyboard input handling
+        const keys = { w: false, a: false, s: false, d: false };
+
+        window.addEventListener('keydown', (event) => {
+            switch (event.key.toLowerCase()) {
+                case 'w': keys.w = true; break;
+                case 'a': keys.a = true; break;
+                case 's': keys.s = true; break;
+                case 'd': keys.d = true; break;
+            }
+        });
+
+        window.addEventListener('keyup', (event) => {
+            switch (event.key.toLowerCase()) {
+                case 'w': keys.w = false; break;
+                case 'a': keys.a = false; break;
+                case 's': keys.s = false; break;
+                case 'd': keys.d = false; break;
+            }
+        });
+
+        // Animation clock
+        const clock = new THREE.Clock();
+
+        // Function to switch animations
+        function setAction(newAction) {
+            if (newAction && currentAction !== newAction) {
+                currentAction.stop();
+                newAction.play();
+                currentAction = newAction;
+            }
+        }
+
+        // Animation loop
+        function animate() {
+            requestAnimationFrame(animate);
+
+            const delta = clock.getDelta();
+            if (mixer) mixer.update(delta);
+
+            // Switch animations based on key presses
+            if (keys.w) {
+                setAction(runAction);
+            } else if (keys.s) {
+                setAction(runBackAction);
+            } else if (keys.a) {
+                setAction(strafeLeftAction);
+            } else if (keys.d) {
+                setAction(strafeRightAction);
+            } else {
+                setAction(idleAction);
+            }
+
+            controls.update();
+            renderer.render(scene, camera);
+        }
+
+        animate();
+
+        // Handle window resize
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+    </script>
+</body>
+
+</html>
